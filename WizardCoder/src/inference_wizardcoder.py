@@ -56,11 +56,12 @@ def evaluate(
     return output
 
 
-def generate_prompt(instruction, input=None):
+def generate_prompt(docstring, input=None):
     return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
 
 ### Instruction:
-{instruction}
+Generate a python function that has this docstring:
+\"\"\"{docstring}\"\"\"
 
 ### Response:"""
 
@@ -72,7 +73,7 @@ def main(
     output_data_path = "Output.jsonl",
 ):
     assert base_model, (
-        "Please specify a --base_model, e.g. --base_model='bigcode/starcoder'"
+        "Please specify a --base_model, e.g. --base_model='WizardLM/WizardCoder-15B-V1.0'"
     )
 
     tokenizer = AutoTokenizer.from_pretrained(base_model)
@@ -105,13 +106,15 @@ def main(
     for num, line in enumerate(input_data):
         one_data = line
         id = one_data["idx"]
-        instruction = one_data["Instruction"]
-        print(instruction)
-        _output = evaluate(instruction, tokenizer, model)
+        # instruction = one_data["Instruction"]
+        # print(instruction)
+        docstring = one_data["docstring"]
+        print(docstring)
+        _output = evaluate(docstring, tokenizer, model)
         final_output = _output[0].split("### Response:")[1].strip()
         new_data = {
             "id": id,
-            "instruction": instruction,
+            "docstring": docstring,
             "wizardcoder": final_output
         }
         output_data.write(new_data)
