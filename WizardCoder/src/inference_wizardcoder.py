@@ -19,6 +19,8 @@ try:
 except:
     pass
 
+torch.cuda.empty_cache()
+
 def evaluate(
         batch_data,
         tokenizer,
