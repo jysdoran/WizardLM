@@ -39,4 +39,5 @@ mkdir -p $output_dir
 python src/inference_wizardcoder.py \
     --base_model "WizardLM/WizardCoder-15B-V1.0" \
     --input_data_path "$datasetdir/train_100.jsonl" \
-    --output_data_path "$output_dir/result.jsonl"
+    --output_data_path "$output_dir/result.jsonl" \
+    --batch_size 1

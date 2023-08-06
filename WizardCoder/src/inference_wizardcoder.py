@@ -1,3 +1,4 @@
+import itertools
 import sys
 import os
 import fire
@@ -33,7 +34,7 @@ def evaluate(
         max_new_tokens=2048,
         **kwargs,
 ):
-    prompts = generate_prompt(batch_data, input)
+    prompts = generate_prompt_batch(batch_data, input)
     inputs = tokenizer(prompts, return_tensors="pt", max_length=256, truncation=True, padding=True)
     input_ids = inputs["input_ids"].to(device)
     generation_config = GenerationConfig(
@@ -64,15 +65,32 @@ def generate_prompt(docstring, input=None):
 ### Instruction:
 Generate a python function that has this docstring:
 \"\"\"{docstring}\"\"\"
+Do not respond with anything other than the function.
 
 ### Response:"""
 
+
+def generate_prompt_batch(batch_data, input=None):
+    if isinstance(batch_data, str):
+        return batch_data
+    return [generate_prompt(js["docstring"], input) for js in batch_data]
+
+def batched(iterable, n):
+    "Batch data into lists of length n. The last batch may be shorter."
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    it = iter(iterable)
+    while True:
+        batch = list(itertools.islice(it, n))
+        if not batch:
+            return
+        yield batch
 
 def main(
     load_8bit: bool = False,
     base_model: str = "Model_Path",
     input_data_path = "Input.jsonl",
     output_data_path = "Output.jsonl",
+    batch_size: int = 1,
 ):
     assert base_model, (
         "Please specify a --base_model, e.g. --base_model='WizardLM/WizardCoder-15B-V1.0'"
@@ -105,21 +123,31 @@ def main(
     input_data = jsonlines.open(input_data_path, mode='r')
     output_data = jsonlines.open(output_data_path, mode='w')
 
-    for num, line in enumerate(input_data):
-        one_data = line
-        id = one_data["idx"]
+
+    for jsons in batched(input_data, batch_size):
+        # id = one_data["idx"]
         # instruction = one_data["Instruction"]
         # print(instruction)
-        docstring = one_data["docstring"]
-        print(docstring)
-        _output = evaluate(docstring, tokenizer, model)
-        final_output = _output[0].split("### Response:")[1].strip()
-        new_data = {
-            "id": id,
-            "docstring": docstring,
-            "wizardcoder": final_output
-        }
-        output_data.write(new_data)
+        # docstring = one_data["docstring"]
+        # print(docstring)
+        _output = evaluate(jsons, tokenizer, model)
+        print(_output, _output.__dict__)
+        # final_output = _output[0].split("### Response:")[1].strip()
+        # new_data = {
+        #     "id": id,
+        #     "docstring": docstring,
+        #     "wizardcoder": final_output
+        # }
+        # output_data.write(new_data)
+
+        new_data = [
+            {"id": js["idx"],
+             "docstring": js["docstring"],
+             "wizardcoder": output.split("### Response:")[1].strip()} for
+            js, output in zip(jsons, _output)
+        ]
+        output_data.write_all(new_data)
+
 
 
 if __name__ == "__main__":
