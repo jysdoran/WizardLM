@@ -131,7 +131,7 @@ def main(
         # docstring = one_data["docstring"]
         # print(docstring)
         _output = evaluate(jsons, tokenizer, model)
-        print(_output, _output.__dict__)
+        print(_output)
         # final_output = _output[0].split("### Response:")[1].strip()
         # new_data = {
         #     "id": id,
@@ -147,6 +147,9 @@ def main(
             js, output in zip(jsons, _output)
         ]
         output_data.write_all(new_data)
+
+    output_data.close()
+    input_data.close()
 
 
 
