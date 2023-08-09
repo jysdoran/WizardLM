@@ -140,11 +140,16 @@ def main(
         # }
         # output_data.write(new_data)
 
+        responses = []
+        for output in _output:
+            response_split = output.split("### Response:")
+            responses.append(response_split[1].strip() if len(response_split) > 1 else "")
+
         new_data = [
             {"id": js["idx"],
              "docstring": js["docstring"],
-             "wizardcoder": output.split("### Response:")[1].strip()} for
-            js, output in zip(jsons, _output)
+             "wizardcoder": response} for
+            js, response in zip(jsons, responses)
         ]
         output_data.write_all(new_data)
 
